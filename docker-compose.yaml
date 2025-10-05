@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgresql_db
+    environment:
+      POSTGRES_DB: provider
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: Aa123456
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d provider"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend_service
+    environment:
+      - PORT=8080
+      - ENV=production
+      - LOG_LEVEL=info
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=provider
+      - DB_USER=admin
+      - DB_PASSWORD=Aa123456
+      - DB_SSL_MODE=disable
+    volumes:
+      - ./:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
