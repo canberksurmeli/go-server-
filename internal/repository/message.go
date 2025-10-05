@@ -19,7 +19,6 @@ func NewMessageRepository(db *database.DB) *MessageRepository {
 	}
 }
 
-// GetUnsentMessages retrieves unsent messages with transaction
 func (r *MessageRepository) GetUnsentMessages(ctx context.Context, limit int) ([]*models.Message, error) {
 	query := `
         SELECT id, content, author, sent, sent_at, created_at, updated_at 
@@ -55,8 +54,7 @@ func (r *MessageRepository) GetUnsentMessages(ctx context.Context, limit int) ([
 	return messages, rows.Err()
 }
 
-// MarkAsSent marks a message as sent with transaction
-func (r *MessageRepository) MarkAsSent(ctx context.Context, tx pgx.Tx, messageID int) error {
+func (r *MessageRepository) MarkAsSent(ctx context.Context, tx pgx.Tx, id int) error {
 	query := `
         UPDATE messages 
         SET sent = true, 
@@ -65,30 +63,26 @@ func (r *MessageRepository) MarkAsSent(ctx context.Context, tx pgx.Tx, messageID
         WHERE id = $3`
 
 	now := time.Now()
-	_, err := tx.Exec(ctx, query, now, now, messageID)
+	_, err := tx.Exec(ctx, query, now, now, id)
 	return err
 }
 
-// MarkMultipleAsSent marks multiple messages as sent with transaction
-func (r *MessageRepository) MarkMultipleAsSent(ctx context.Context, tx pgx.Tx, messageIDs []int) error {
-	if len(messageIDs) == 0 {
+func (r *MessageRepository) MarkMultipleAsSent(ctx context.Context, tx pgx.Tx, ids []int) error {
+	if len(ids) == 0 {
 		return nil
 	}
 
-	query := `
-        UPDATE messages 
+	query := `UPDATE messages 
         SET sent = true, 
             sent_at = $1, 
             updated_at = $2 
-        WHERE id = ANY($3)
-    `
+        WHERE id = ANY($3)`
 
 	now := time.Now()
-	_, err := tx.Exec(ctx, query, now, now, messageIDs)
+	_, err := tx.Exec(ctx, query, now, now, ids)
 	return err
 }
 
-// GetTwoMessagesWithTx retrieves exactly 2 messages using provided transaction
 func (r *MessageRepository) GetTwoMessagesWithTx(ctx context.Context, tx pgx.Tx) ([]*models.Message, error) {
 	query := `
         SELECT id, content, author, sent, sent_at, created_at, updated_at 

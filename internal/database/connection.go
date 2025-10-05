@@ -20,7 +20,6 @@ var (
 	ctx      = context.Background()
 )
 
-// Init initializes the database connection (call once at startup)
 func Init() error {
 	var err error
 	once.Do(func() {
@@ -53,7 +52,6 @@ func Init() error {
 	return err
 }
 
-// Get returns the database instance
 func Get() *DB {
 	if instance == nil {
 		fmt.Printf("Database not initialized. Call database.Init() first\n")
@@ -61,12 +59,10 @@ func Get() *DB {
 	return instance
 }
 
-// Begin starts a new transaction
 func (db *DB) Begin(ctx context.Context) (pgx.Tx, error) {
 	return db.Pool.Begin(ctx)
 }
 
-// Close closes the database connection
 func (db *DB) Close() {
 	if instance != nil {
 		instance.Pool.Close()

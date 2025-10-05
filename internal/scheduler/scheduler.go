@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// Job represents a scheduled job
 type Job struct {
 	Name     string
 	Interval time.Duration
@@ -16,7 +15,6 @@ type Job struct {
 	cancel   context.CancelFunc
 }
 
-// Scheduler manages scheduled jobs
 type Scheduler struct {
 	jobs   map[string]*Job
 	mu     sync.RWMutex
@@ -25,7 +23,6 @@ type Scheduler struct {
 	wg     sync.WaitGroup
 }
 
-// New creates a new scheduler instance
 func New() *Scheduler {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Scheduler{
@@ -35,9 +32,6 @@ func New() *Scheduler {
 	}
 }
 
-// AddJob adds a new job to the scheduler
-// interval: how often to run the job (e.g., 5*time.Second, 1*time.Minute)
-// function: the function to execute
 func (s *Scheduler) AddJob(name string, interval time.Duration, fn func(ctx context.Context) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -61,7 +55,6 @@ func (s *Scheduler) AddJob(name string, interval time.Duration, fn func(ctx cont
 	return nil
 }
 
-// Start starts all scheduled jobs
 func (s *Scheduler) Start() {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -74,7 +67,6 @@ func (s *Scheduler) Start() {
 	fmt.Printf("Scheduler started with %d jobs\n", len(s.jobs))
 }
 
-// StartJob starts a specific job by name
 func (s *Scheduler) StartJob(name string) error {
 	s.mu.RLock()
 	job, exists := s.jobs[name]
@@ -91,7 +83,6 @@ func (s *Scheduler) StartJob(name string) error {
 	return nil
 }
 
-// runJob executes a job at specified intervals
 func (s *Scheduler) runJob(job *Job) {
 	defer s.wg.Done()
 
@@ -114,7 +105,6 @@ func (s *Scheduler) runJob(job *Job) {
 	}
 }
 
-// StopJob stops a specific job by name
 func (s *Scheduler) StopJob(name string) error {
 	s.mu.RLock()
 	job, exists := s.jobs[name]
@@ -129,7 +119,6 @@ func (s *Scheduler) StopJob(name string) error {
 	return nil
 }
 
-// RemoveJob removes a job from the scheduler
 func (s *Scheduler) RemoveJob(name string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -145,7 +134,6 @@ func (s *Scheduler) RemoveJob(name string) error {
 	return nil
 }
 
-// Stop stops all jobs and shuts down the scheduler
 func (s *Scheduler) Stop() {
 	fmt.Println("Stopping scheduler...")
 	s.cancel()
@@ -153,7 +141,6 @@ func (s *Scheduler) Stop() {
 	fmt.Println("Scheduler stopped")
 }
 
-// ListJobs returns a list of all registered jobs
 func (s *Scheduler) ListJobs() []string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -165,7 +152,6 @@ func (s *Scheduler) ListJobs() []string {
 	return jobs
 }
 
-// GetJobInfo returns information about a specific job
 func (s *Scheduler) GetJobInfo(name string) (string, time.Duration, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
