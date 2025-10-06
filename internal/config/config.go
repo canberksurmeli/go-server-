@@ -8,10 +8,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type BaseConfig struct {
-	LogLevel string `validate:"required,oneof=debug info warn error"`
-}
-
 type HttpConfig struct {
 	Port int `validate:"required,min=1,max=65535"`
 }
@@ -25,8 +21,7 @@ type DatabaseConfig struct {
 }
 
 type Config struct {
-	Http HttpConfig
-	Base BaseConfig
+	Http     HttpConfig
 	Database DatabaseConfig
 }
 
@@ -39,12 +34,6 @@ func Load() *Config {
 			port = parsed
 		}
 	}
-
-	logLevel := os.Getenv("LOG_LEVEL")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-
 	env := os.Getenv("ENV")
 	if env == "" {
 		env = "development"
@@ -53,9 +42,6 @@ func Load() *Config {
 	config := &Config{
 		Http: HttpConfig{
 			Port: port,
-		},
-		Base: BaseConfig{
-			LogLevel: logLevel,
 		},
 		Database: DatabaseConfig{
 			Host:     os.Getenv("DB_HOST"),

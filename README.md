@@ -12,25 +12,18 @@ A robust HTTP service written in Go that manages and processes messages with sch
 - Docker containerization with Docker Compose
 - Gin web framework for high performance
 - CORS support
-- Database connection middleware
-- Graceful shutdown with signal handling
-- Health check endpoints
 
 ## API Endpoints
 
 ### Health Check
-- `GET /health` - Returns server health status
 - `GET /api/v1/health` - Returns detailed health status with timestamp
 
 ### Messages
-- `GET /api/v1/message/` - Retrieve 2 sent messages using transaction
+- `GET /api/v1/message/` - Retrieve sent messages
 
 ### Scheduler Management
 - `POST /api/v1/scheduler/job/start` - Start the FetchMessagesJob
 - `POST /api/v1/scheduler/job/stop` - Stop the FetchMessagesJob
-- `POST /api/v1/scheduler/job/restart` - Restart the FetchMessagesJob
-- `GET /api/v1/scheduler/job/status` - Get status of all scheduled jobs
-- `POST /api/v1/scheduler/stop` - Stop the entire scheduler
 
 ## Quick Start
 
@@ -76,7 +69,6 @@ The application can be configured using environment variables:
 ### Server Configuration
 - `PORT` - Server port (default: 8080)
 - `ENV` - Environment (default: development)
-- `LOG_LEVEL` - Log level: debug, info, warn, error (default: info)
 
 ### Database Configuration
 - `DB_HOST` - PostgreSQL host (default: localhost)
@@ -108,39 +100,8 @@ curl -X POST http://localhost:8080/api/v1/scheduler/job/start
 curl -X POST http://localhost:8080/api/v1/scheduler/job/stop
 ```
 
-#### Restart the message processing job
-```bash
-curl -X POST http://localhost:8080/api/v1/scheduler/job/restart
-```
-
-#### Get scheduler job status
-```bash
-curl http://localhost:8080/api/v1/scheduler/job/status
-```
-
-Response example:
-```json
-{
-  "status": "success",
-  "jobs": [
-    {
-      "name": "fetch-messages",
-      "interval": "10s"
-    }
-  ],
-  "count": 1
-}
-```
-
-#### Stop the entire scheduler
-```bash
-curl -X POST http://localhost:8080/api/v1/scheduler/stop
-```
-
 ### Health Check
 ```bash
-curl http://localhost:8080/health
-# or
 curl http://localhost:8080/api/v1/health
 ```
 
@@ -196,29 +157,18 @@ The scheduler runs background jobs for automated message processing:
 - Runtime control via REST API
 
 ### Database
-- PostgreSQL 15 with GORM ORM
+- PostgreSQL 15
 - Transaction support for data consistency
 - Connection pooling and middleware
 
 ## Dependencies
 
 - [gin-gonic/gin](https://github.com/gin-gonic/gin) - High-performance HTTP web framework
-- [gorm.io/gorm](https://gorm.io/) - ORM library for Go
-- [gorm.io/driver/postgres](https://gorm.io/driver/postgres) - PostgreSQL driver for GORM
 - [go-playground/validator](https://github.com/go-playground/validator) - Struct validation
 - [lib/pq](https://github.com/lib/pq) - PostgreSQL driver
 
 ## Development
 
-### Run in development mode
-```bash
-ENV=development LOG_LEVEL=debug go run main.go
-```
-
-### Build for production
-```bash
-go build -o build/goapp main.go
-```
 
 ### Using Makefile
 ```bash

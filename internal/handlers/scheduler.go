@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"message-provider-go/internal/scheduler"
 	"net/http"
 
@@ -45,6 +46,24 @@ func (h *SchedulerHandler) StopJob(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "FetchMessagesJob stopped successfully",
+		"message": "FetchMessagesJob stop signal sent successfully",
+	})
+}
+
+func (h *SchedulerHandler) JobStatus(c *gin.Context) {
+	isRunning, err := h.scheduler.IsJobRunning("fetch-messages")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Failed to get job status",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":   "success",
+		"job_name": "fetch-messages",
+		"running":  isRunning,
+		"message":  fmt.Sprintf("FetchMessagesJob is running: %v", isRunning),
 	})
 }

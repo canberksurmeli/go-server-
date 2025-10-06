@@ -13,6 +13,7 @@ type Job struct {
 	Function func(ctx context.Context) error
 	ctx      context.Context
 	cancel   context.CancelFunc
+	running  bool
 }
 
 type Scheduler struct {
@@ -47,6 +48,7 @@ func (s *Scheduler) AddJob(name string, interval time.Duration, fn func(ctx cont
 		Function: fn,
 		ctx:      ctx,
 		cancel:   cancel,
+		running:  false,
 	}
 
 	s.jobs[name] = job
@@ -56,26 +58,41 @@ func (s *Scheduler) AddJob(name string, interval time.Duration, fn func(ctx cont
 }
 
 func (s *Scheduler) Start() {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	for _, job := range s.jobs {
-		s.wg.Add(1)
-		go s.runJob(job)
+		if !job.running {
+			job.running = true
+			s.wg.Add(1)
+			go s.runJob(job)
+		}
 	}
 
 	fmt.Printf("Scheduler started with %d jobs\n", len(s.jobs))
 }
 
 func (s *Scheduler) StartJob(name string) error {
-	s.mu.RLock()
-	job, exists := s.jobs[name]
-	s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
+	job, exists := s.jobs[name]
 	if !exists {
 		return fmt.Errorf("job '%s' not found", name)
 	}
 
+	if job.running {
+		return fmt.Errorf("job '%s' is already running", name)
+	}
+
+	// Eğer job daha önce durdurulmuşsa, yeni context oluştur
+	if job.ctx.Err() != nil {
+		ctx, cancel := context.WithCancel(s.ctx)
+		job.ctx = ctx
+		job.cancel = cancel
+	}
+
+	job.running = true
 	s.wg.Add(1)
 	go s.runJob(job)
 
@@ -84,7 +101,12 @@ func (s *Scheduler) StartJob(name string) error {
 }
 
 func (s *Scheduler) runJob(job *Job) {
-	defer s.wg.Done()
+	defer func() {
+		s.mu.Lock()
+		job.running = false
+		s.mu.Unlock()
+		s.wg.Done()
+	}()
 
 	ticker := time.NewTicker(job.Interval)
 	defer ticker.Stop()
@@ -114,8 +136,12 @@ func (s *Scheduler) StopJob(name string) error {
 		return fmt.Errorf("job '%s' not found", name)
 	}
 
+	if !job.running {
+		return fmt.Errorf("job '%s' is not running", name)
+	}
+
 	job.cancel()
-	fmt.Printf("Job '%s' stopped\n", name)
+	fmt.Printf("Job '%s' stop signal sent\n", name)
 	return nil
 }
 
@@ -128,7 +154,9 @@ func (s *Scheduler) RemoveJob(name string) error {
 		return fmt.Errorf("job '%s' not found", name)
 	}
 
-	job.cancel()
+	if job.running {
+		job.cancel()
+	}
 	delete(s.jobs, name)
 	fmt.Printf("Job '%s' removed\n", name)
 	return nil
@@ -162,4 +190,16 @@ func (s *Scheduler) GetJobInfo(name string) (string, time.Duration, error) {
 	}
 
 	return job.Name, job.Interval, nil
+}
+
+func (s *Scheduler) IsJobRunning(name string) (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	job, exists := s.jobs[name]
+	if !exists {
+		return false, fmt.Errorf("job '%s' not found", name)
+	}
+
+	return job.running, nil
 }

@@ -25,10 +25,6 @@ func New(sched *scheduler.Scheduler) *Server {
 
 	router.Use(middleware.GinCORS())
 	router.Use(middleware.DBMiddleware())
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
 	api := router.Group("/api/v1")
 
 	msg := api.Group("/message")
